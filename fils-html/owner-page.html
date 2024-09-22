@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Page</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        button.delete {
+            background-color: #dc3545;
+        }
+        .toggle-btn {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .item-list {
+            margin-top: 20px;
+        }
+        .item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .container h2 {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <a href="login-owner.html">Exit</a>
+    </script>
+   
+    <div class="container">
+        <h2 onclick="toggleSection('restaurantSection')">إضافة مطعم</h2>
+        <div id="restaurantSection" style="display: none;">
+            <form id="restaurantForm">
+                <div class="form-group">
+                    <label for="ownerName">الاسم:</label>
+                    <input type="text" id="ownerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">البريد الإلكتروني:</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">رقم التليفون:</label>
+                    <input type="tel" id="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">كلمة المرور:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit">إضافة مطعم</button>
+            </form>
+            <div id="restaurantMessage" class="message"></div>
+            <div id="restaurantError" class="error"></div>
+            <div class="item-list" id="restaurantsList"></div>
+        </div>
+
+        <h2 onclick="toggleSection('deliveryPersonSection')">إضافة مندوب</h2>
+        <div id="deliveryPersonSection" style="display: none;">
+            <form id="deliveryPersonForm">
+                <div class="form-group">
+                    <label for="deliveryName">الاسم:</label>
+                    <input type="text" id="deliveryName" required>
+                </div>
+                <div class="form-group">
+                    <label for="deliveryPassword">كلمة المرور:</label>
+                    <input type="password" id="deliveryPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="deliveryPhone">رقم التليفون:</label>
+                    <input type="tel" id="deliveryPhone" required>
+                </div>
+                <button type="submit">إضافة مندوب</button>
+            </form>
+            <div id="deliveryMessage" class="message"></div>
+            <div id="deliveryError" class="error"></div>
+            <div class="item-list" id="deliveryPersonsList"></div>
+        </div>
+
+        <h2 onclick="toggleSection('adminSection')">إضافة أدمين</h2>
+        <div id="adminSection" style="display: none;">
+            <form id="adminForm">
+                <div class="form-group">
+                    <label for="adminName">الاسم:</label>
+                    <input type="text" id="adminName" required>
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">كلمة المرور:</label>
+                    <input type="password" id="adminPassword" required>
+                </div>
+                <button type="submit">إضافة أدمين</button>
+            </form>
+            <div id="adminMessage" class="message"></div>
+            <div id="adminError" class="error"></div>
+            <div class="item-list" id="adminsList"></div>
+        </div>
+    </div>
+    <script>
+        // إعداد Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBon5IxjZIlqe3P44MTKXu6xTqX5kdKnCA",
+            authDomain: "add-owner.firebaseapp.com",
+            projectId: "add-owner",
+            storageBucket: "add-owner.appspot.com",
+            messagingSenderId: "367416374034",
+            appId: "1:367416374034:web:e5b5cd9b190083c2adb9cb"
+        };
+
+        // تهيئة التطبيق
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const restaurantsRef = database.ref('restaurant accounts');
+        const deliveryPersonsRef = database.ref('Delivery Person');
+        const adminsRef = database.ref('admins');
+
+        let currentRestaurantId = 101; // ابدأ من 101
+        let currentDeliveryId = 1001; // ابدأ من 1001
+        let currentAdminId = 11; // ابدأ من 11
+
+        document.getElementById("restaurantForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const ownerName = document.getElementById("ownerName").value;
+
+            // التحقق من وجود الاسم
+            restaurantsRef.orderByChild('name').equalTo(ownerName).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    document.getElementById("restaurantError").textContent = "الاسم موجود بالفعل!";
+                } else {
+                    addRestaurant(ownerName);
+                }
+            });
+        });
+
+        function addRestaurant(ownerName) {
+            const email = document.getElementById("email").value;
+            const phone = document.getElementById("phone").value;
+            const password = document.getElementById("password").value;
+            const timestamp = new Date().toISOString();
+            const restaurantId = currentRestaurantId++;
+
+            restaurantsRef.child(restaurantId).set({
+                id: restaurantId,
+                name: ownerName,
+                email: email,
+                phone: phone,
+                password: password,
+                createdAt: timestamp
+            })
+            .then(() => {
+                document.getElementById("restaurantMessage").textContent = "تم إضافة المطعم بنجاح!";
+                document.getElementById("restaurantError").textContent = ""; // إخفاء رسالة الخطأ
+                document.getElementById("restaurantForm").reset(); // إعادة تعيين النموذج
+                displayRestaurants(); // تحديث قائمة المطاعم
+            })
+            .catch((error) => {
+                console.error("خطأ في إضافة المطعم: ", error);
+                document.getElementById("restaurantError").textContent = "حدث خطأ: " + error.message;
+            });
+        }
+
+        function displayRestaurants() {
+            restaurantsRef.once('value', (snapshot) => {
+                const restaurantsList = document.getElementById('restaurantsList');
+                restaurantsList.innerHTML = ""; // مسح القائمة الحالية
+
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    const li = document.createElement('div');
+                    li.className = 'item';
+                    li.innerHTML = `
+                        <h4>ID: ${data.id}</h4>
+                        <h4>اسم المطعم: ${data.name}</h4>
+                        <p>البريد الإلكتروني: ${data.email}</p>
+                        <p>رقم التليفون: ${data.phone}</p>
+                        <p>التاريخ: ${data.createdAt}</p>
+                        <button onclick="deleteRestaurant('${childSnapshot.key}')">حذف</button>
+                        <button onclick="editRestaurant('${childSnapshot.key}', '${data.name}', '${data.email}', '${data.phone}', '${data.password}', ${data.id})">تعديل</button>
+                    `;
+                    restaurantsList.appendChild(li);
+                });
+            });
+        }
+
+        function deleteRestaurant(id) {
+            restaurantsRef.child(id).once('value').then(snapshot => {
+                const data = snapshot.val();
+                const removedRef = database.ref('removed restaurants').child(data.id);
+                removedRef.set(data                ).then(() => {
+                    restaurantsRef.child(id).remove().then(() => {
+                        displayRestaurants();
+                    }).catch(error => {
+                        console.error("خطأ في حذف المطعم: ", error);
+                    });
+                });
+            });
+        }
+
+        function editRestaurant(id, name, email, phone, password, restaurantId) {
+            const newName = prompt("أدخل الاسم الجديد:", name);
+            const newEmail = prompt("أدخل البريد الإلكتروني الجديد:", email);
+            const newPhone = prompt("أدخل رقم الهاتف الجديد:", phone);
+            const newPassword = prompt("أدخل كلمة المرور الجديدة:", password);
+
+            if (newName && newEmail && newPhone && newPassword) {
+                restaurantsRef.child(id).set({
+                    id: restaurantId,
+                    name: newName,
+                    email: newEmail,
+                    phone: newPhone,
+                    password: newPassword,
+                    createdAt: new Date().toISOString()
+                }).then(() => {
+                    displayRestaurants();
+                }).catch(error => {
+                    console.error("خطأ في تعديل المطعم: ", error);
+                });
+            }
+        }
+
+        // جزء من كود إضافة مندوب
+        document.getElementById("deliveryPersonForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const deliveryName = document.getElementById("deliveryName").value;
+
+            // التحقق من وجود الاسم
+            deliveryPersonsRef.orderByChild('name').equalTo(deliveryName).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    document.getElementById("deliveryError").textContent = "الاسم موجود بالفعل!";
+                } else {
+                    addDeliveryPerson(deliveryName);
+                }
+            });
+        });
+
+        function addDeliveryPerson(deliveryName) {
+            const password = document.getElementById("deliveryPassword").value;
+            const phone = document.getElementById("deliveryPhone").value;
+            const timestamp = new Date().toISOString();
+            const deliveryId = currentDeliveryId++;
+
+            deliveryPersonsRef.child(deliveryId).set({
+                id: deliveryId,
+                name: deliveryName,
+                password: password,
+                phone: phone,
+                createdAt: timestamp
+            }).then(() => {
+                document.getElementById("deliveryMessage").textContent = "تم إضافة المندوب بنجاح!";
+                document.getElementById("deliveryError").textContent = ""; // إخفاء رسالة الخطأ
+                document.getElementById("deliveryPersonForm").reset(); // إعادة تعيين النموذج
+                displayDeliveryPersons(); // تحديث قائمة المناديب
+            }).catch((error) => {
+                console.error("خطأ في إضافة المندوب: ", error);
+                document.getElementById("deliveryError").textContent = "حدث خطأ: " + error.message;
+            });
+        }
+
+        function displayDeliveryPersons() {
+            deliveryPersonsRef.once('value', (snapshot) => {
+                const deliveryList = document.getElementById('deliveryPersonsList');
+                deliveryList.innerHTML = ""; // مسح القائمة الحالية
+
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    const li = document.createElement('div');
+                    li.className = 'item';
+                    li.innerHTML = `
+                        <h4>ID: ${data.id}</h4>
+                        <h4>اسم المندوب: ${data.name}</h4>
+                        <p>رقم التليفون: ${data.phone}</p>
+                        <p>التاريخ: ${data.createdAt}</p>
+                        <button onclick="deleteDeliveryPerson('${childSnapshot.key}')">حذف</button>
+                        <button onclick="editDeliveryPerson('${childSnapshot.key}', '${data.name}', '${data.password}', '${data.phone}', ${data.id})">تعديل</button>
+                    `;
+                    deliveryList.appendChild(li);
+                });
+            });
+        }
+
+        function deleteDeliveryPerson(id) {
+            deliveryPersonsRef.child(id).once('value').then(snapshot => {
+                const data = snapshot.val();
+                const removedRef = database.ref('removed delivery persons').child(data.id);
+                removedRef.set(data).then(() => {
+                    deliveryPersonsRef.child(id).remove().then(() => {
+                        displayDeliveryPersons();
+                    }).catch(error => {
+                        console.error("خطأ في حذف المندوب: ", error);
+                    });
+                });
+            });
+        }
+
+        function editDeliveryPerson(id, name, password, phone, deliveryId) {
+            const newName = prompt("أدخل الاسم الجديد:", name);
+            const newPassword = prompt("أدخل كلمة المرور الجديدة:", password);
+            const newPhone = prompt("أدخل رقم الهاتف الجديد:", phone);
+
+            if (newName && newPassword && newPhone) {
+                deliveryPersonsRef.child(id).set({
+                    id: deliveryId,
+                    name: newName,
+                    password: newPassword,
+                    phone: newPhone,
+                    createdAt: new Date().toISOString()
+                }).then(() => {
+                    displayDeliveryPersons();
+                }).catch(error => {
+                    console.error("خطأ في تعديل المندوب: ", error);
+                });
+            }
+        }
+
+        // جزء من كود إضافة أدمين
+        document.getElementById("adminForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const adminName = document.getElementById("adminName").value;
+
+            // التحقق من وجود الاسم
+            adminsRef.orderByChild('name').equalTo(adminName).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    document.getElementById("adminError").textContent = "الاسم موجود بالفعل!";
+                } else {
+                    addAdmin(adminName);
+                }
+            });
+        });
+
+        function addAdmin(adminName) {
+            const password = document.getElementById("adminPassword").value;
+            const adminId = currentAdminId++;
+
+            adminsRef.child(adminId).set({
+                id: adminId,
+                name: adminName,
+                password: password
+            }).then(() => {
+                document.getElementById("adminMessage").textContent = "تم إضافة الأدمين بنجاح!";
+                document.getElementById("adminError").textContent = ""; // إخفاء رسالة الخطأ
+                document.getElementById("adminForm").reset(); // إعادة تعيين النموذج
+                displayAdmins(); // تحديث قائمة الأدمين
+            }).catch((error) => {
+                console.error("خطأ في إضافة الأدمين: ", error);
+                document.getElementById("adminError").textContent = "حدث خطأ: " + error.message;
+            });
+        }
+
+        function displayAdmins() {
+            adminsRef.once('value', (snapshot) => {
+                const adminsList = document.getElementById('adminsList');
+                adminsList.innerHTML = ""; // مسح القائمة الحالية
+
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    const li = document.createElement('div');
+                    li.className = 'item';
+                    li.innerHTML = `
+                        <h4>ID: ${data.id}</h4>
+                        <h4>اسم الأدمين: ${data.name}</h4>
+                        <button onclick="deleteAdmin('${childSnapshot.key}')">حذف</button>
+                        <button onclick="editAdmin('${childSnapshot.key}', '${data.name}', '${data.password}', ${data.id})">تعديل</button>
+                    `;
+                    adminsList.appendChild(li);
+                });
+            });
+        }
+
+        function deleteAdmin(id) {
+            adminsRef.child(id).once('value').then(snapshot => {
+                const data = snapshot.val();
+                const removedRef = database.ref('removed admins').child(data.id);
+                removedRef.set(data).then(() => {
+                    adminsRef.child(id).remove().then(() => {
+                        displayAdmins();
+                    }).catch(error => {
+                        console.error("خطأ في حذف الأدمين: ", error);
+                    });
+                });
+            });
+        }
+
+        function editAdmin(id, name, password, adminId) {
+            const newName = prompt("أدخل الاسم الجديد:", name);
+            const newPassword = prompt("أدخل كلمة المرور الجديدة:", password);
+
+            if (newName && newPassword) {
+                adminsRef.child(id).set({
+                    id: adminId,
+                    name: newName,
+                    password: newPassword
+                }).then(() => {
+                    displayAdmins();
+                }).catch(error => {
+                    console.error("خطأ في تعديل الأدمين: ", error);
+                });
+            }
+        }
+
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            section.style.display = section.style.display === "none" ? "block" : "none";
+        }
+
+        // عرض القوائم عند تحميل الصفحة
+        window.onload = function() {
+            displayRestaurants();
+            displayDeliveryPersons();
+            displayAdmins();
+        };
+    </script>
+</body>
+</html>
+

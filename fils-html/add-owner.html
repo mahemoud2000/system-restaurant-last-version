@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Registration</title>
+    <!-- Load Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+   <div class="main-add-admin">
+    <form onsubmit="registerAdmin(event)">
+        <h2>Add Owner</h2>
+        <label for="ownerName">الاسم:</label>
+        <input type="text" id="ownerName" required>
+        <br><br>
+        <label for="ownerPassword">كلمة المرور:</label>
+        <input type="password" id="ownerPassword" required>
+        <br><hr>
+        <button type="submit">تسجيل</button>
+    </form>
+   </div>
+    <a href="fils-html/login-adimn.html">Login</a>
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBon5IxjZIlqe3P44MTKXu6xTqX5kdKnCA",
+            authDomain: "add-owner.firebaseapp.com",
+            projectId: "add-owner",
+            storageBucket: "add-owner.appspot.com",
+            messagingSenderId: "367416374034",
+            appId: "1:367416374034:web:e5b5cd9b190083c2adb9cb"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const adminsRef = database.ref('owner');
+
+        // Admin registration function
+        function registerAdmin(event) {
+            event.preventDefault(); // Prevent default form submission
+            const ownerName = document.getElementById('ownerName').value;
+            const ownerPassword = document.getElementById('ownerPassword').value;
+
+            // Generate a unique ID for the admin (optional)
+            const adminId = ownerName.replace(/\s+/g, '_') + '_' + Date.now();
+
+            // Store admin data in Firebase
+            adminsRef.child(adminId).set({
+                name: ownerName,
+                password: ownerPassword
+            }).then(() => {
+                alert('تم تسجيل الأدمين بنجاح!');
+                window.location.href = "#"; // Redirect to Add User page
+            }).catch(error => {
+                console.error('Error registering admin:', error);
+                alert('Error: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>

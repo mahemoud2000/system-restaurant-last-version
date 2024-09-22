@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل دخول الأدمينز</title>
+    <!-- Load Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+    <form onsubmit="loginAdmin(event)">
+        <h2>تسجيل دخول الأدمين</h2>
+        <label for="adminName">الاسم:</label>
+        <input type="text" id="adminName" required>
+        <br><br>
+        <label for="adminPassword">كلمة المرور:</label>
+        <input type="password" id="adminPassword" required>
+        <br><hr>
+        <button type="submit">تسجيل الدخول</button>
+        <div id="error" style="color: red;"></div>
+    </form>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBon5IxjZIlqe3P44MTKXu6xTqX5kdKnCA",
+            authDomain: "add-owner.firebaseapp.com",
+            projectId: "add-owner",
+            storageBucket: "add-owner.appspot.com",
+            messagingSenderId: "367416374034",
+            appId: "1:367416374034:web:e5b5cd9b190083c2adb9cb"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const adminsRef = database.ref('admins');
+
+        // Admin login function
+        function loginAdmin(event) {
+            event.preventDefault(); // Prevent default form submission
+            const adminName = document.getElementById('adminName').value;
+            const adminPassword = document.getElementById('adminPassword').value;
+
+            // Check if the admin exists in the database
+            adminsRef.orderByChild('name').equalTo(adminName).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const adminData = snapshot.val();
+                    const adminId = Object.keys(adminData)[0]; // Get the admin ID
+                    const storedPassword = adminData[adminId].password;
+
+                    // Validate password
+                    if (storedPassword === adminPassword) {
+                        alert('تم تسجيل الدخول بنجاح!');
+                        window.location.href = "home-admin.html"; // Redirect to home page
+                    } else {
+                        document.getElementById('error').textContent = "اسم المستخدم أو كلمة المرور غير صحيحة!";
+                    }
+                } else {
+                    document.getElementById('error').textContent = "اسم المستخدم أو كلمة المرور غير صحيحة!";
+                }
+            }).catch(error => {
+                console.error('Error during login:', error);
+                document.getElementById('error').textContent = "حدث خطأ: " + error.message;
+            });
+        }
+    </script>
+</body>
+</html>

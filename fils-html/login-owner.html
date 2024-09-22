@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            margin-top: 20px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Owner Login</h2>
+        <form id="loginForm">
+            <input type="text" id="ownerName" placeholder="Enter your name" required>
+            <input type="password" id="ownerPassword" placeholder="Enter your password" required>
+            <button type="button" onclick="loginOwner()">Login</button>
+        </form>
+        <div id="message" class="message"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+
+    <script>
+        // Config Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBon5IxjZIlqe3P44MTKXu6xTqX5kdKnCA",
+            authDomain: "add-owner.firebaseapp.com",
+            projectId: "add-owner",
+            storageBucket: "add-owner.appspot.com",
+            messagingSenderId: "367416374034",
+            appId: "1:367416374034:web:e5b5cd9b190083c2adb9cb"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        function loginOwner() {
+            const name = document.getElementById('ownerName').value;
+            const password = document.getElementById('ownerPassword').value;
+            const messageDiv = document.getElementById('message');
+
+            if (name && password) {
+                // Search for the owner in the 'owner' list
+                database.ref('owner').orderByChild('name').equalTo(name).once('value', snapshot => {
+                    if (snapshot.exists()) {
+                        snapshot.forEach(childSnapshot => {
+                            const ownerData = childSnapshot.val();
+                            // Check if password matches
+                            if (ownerData.password === password) {
+                                // Redirect to welcome page
+                                window.location.href = "owner-page.html";
+                            } else {
+                                // Show error message if password doesn't match
+                                messageDiv.innerText = "Incorrect password. Please try again.";
+                            }
+                        });
+                    } else {
+                        // Show error message if owner doesn't exist
+                        messageDiv.innerText = "Owner not found. Please contact the developer or try again.";
+                    }
+                }).catch(error => {
+                    console.error("Error fetching owner data:", error);
+                    messageDiv.innerText = "An error occurred. Please try again.";
+                });
+            } else {
+                messageDiv.innerText = "Please fill out all fields.";
+            }
+        }
+    </script>
+
+</body>
+</html>
